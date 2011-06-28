@@ -7,6 +7,7 @@ import dk.betex.eventcollector.marketservice._
 import org.apache.commons.io._
 import java.io.File
 import org.slf4j.LoggerFactory
+import dk.betex._
 
 class EventCollectorTaskIntegrationTest {
 
@@ -15,6 +16,7 @@ class EventCollectorTaskIntegrationTest {
   val betfairServiceFactoryBean = new dk.bot.betfairservice.DefaultBetFairServiceFactoryBean();
   var betfairService: BetFairService = null
 
+  val betex = new Betex()
   var marketService: MarketService = null
   var eventCollectorTask: EventCollectorTask = null
 
@@ -34,7 +36,7 @@ class EventCollectorTaskIntegrationTest {
     /**Create event collector task.*/
     marketService = new MarketService(betfairService)
     val marketEventListener = EventCollectorTask.FilesystemEventListener(marketDataDir)
-    eventCollectorTask = new EventCollectorTask(marketService, -60, 60, Option(3), 5,marketEventListener)
+    eventCollectorTask = new EventCollectorTask(betex,marketService, -60, 60, Option(3), 5,marketEventListener)
 
     /**Delete old market files.*/
     FileUtils.forceMkdir(new File(marketDataDir))
