@@ -22,9 +22,8 @@ object EventProducer {
 			val toVerifyRunnerData:Tuple2[List[IRunnerPrice],IRunnerTradedVolume],val events:List[String]) extends RuntimeException(message)
 }
 
-class EventProducer extends IEventProducer{
+class EventProducer(val betex:IBetex) extends IEventProducer{
 
-	private val betex = new Betex()
 	private val marketEventProcessor = new MarketEventProcessorImpl(betex)
 	private var nextBetIdValue=1
 	private val nextBetId = () => {nextBetIdValue = nextBetIdValue +1;nextBetIdValue}

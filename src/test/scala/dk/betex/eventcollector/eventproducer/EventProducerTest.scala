@@ -8,7 +8,8 @@ import dk.betex.RunnerTradedVolume._
 
 class EventProducerTest {
 
-	val eventProducer:EventProducer = new EventProducer()
+	private val betex = new Betex()
+	private val eventProducer:EventProducer = new EventProducer(betex)
 
 @Test
 def testProduce {

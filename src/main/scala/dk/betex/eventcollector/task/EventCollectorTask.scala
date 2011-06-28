@@ -15,6 +15,8 @@ import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import scala.util.parsing.json._
 import java.text.SimpleDateFormat
+import dk.betex.api._
+import java.util.Date
 
 /**
  * This class represents a task that writes markets events to files for given set of markets (one file per market).
@@ -28,6 +30,8 @@ object EventCollectorTask {
 
   trait EventListener {
     def onEvents(marketId: Long, events: List[String]): Unit
+
+    def onMarketDiscovery(marketIds: List[Long]) = {}
   }
 
   /**
@@ -59,24 +63,22 @@ object EventCollectorTask {
 }
 
 /**
+ * @param betex Betting Exchange that is used to keep the current state of a betting exchange that market events are produced for.
  * @param marketService This service returns list of markets, and market data (runner prices, traded volume) that is used to calculate market events.
  * @param startInMinutesFrom Market time that markets are monitored from, e.g. -60 means now-60 minutes.
  * @param startInMinutesTo Market time that markets are monitored to, e.g. 60 means now+60 minutes.
  * @param maxNumOfWinners Collect market data for markets with number of winners less or equal to maxNumOfWinners
  * @param marketDiscoveryInterval [ms] How often new markets are discovered, e.g. if it's set to 60000, then new markets will be discovered every 60 seconds, even though this task is executed every 1 second.
  */
-class EventCollectorTask(marketService: MarketService, startInMinutesFrom: Int, startInMinutesTo: Int, maxNumOfWinners: Option[Int],
+class EventCollectorTask(betex: IBetex, marketService: IMarketService, startInMinutesFrom: Int, startInMinutesTo: Int, maxNumOfWinners: Option[Int],
   marketDiscoveryInterval: Int, marketEventListener: EventCollectorTask.EventListener) extends IEventCollectorTask {
 
   private val log = LoggerFactory.getLogger(getClass)
 
   /**Calculate markets events for delta between two market states.*/
-  private val eventProducer = new EventProducer()
+  private val eventProducer = new EventProducer(betex)
 
   private val df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-  
-  /**Set of collected markets.*/
-  private val collectedMarket = scala.collection.mutable.Set[Long]()
 
   /**How often new markets are discovered, e.g. if it's set to 60, then new markets will be discovered every 60 seconds, even though this task is executed every 1 second.*/
   private var discoveryTime: Long = 0
@@ -91,6 +93,7 @@ class EventCollectorTask(marketService: MarketService, startInMinutesFrom: Int, 
     if ((now.getMillis - discoveryTime) > marketDiscoveryInterval) {
       marketIds = marketService.getMarkets(now.plusMinutes(startInMinutesFrom).toDate, now.plusMinutes(startInMinutesTo).toDate, None, maxNumOfWinners)
       discoveryTime = now.getMillis
+      marketEventListener.onMarketDiscovery(marketIds)
       log.info("Market discovery: " + marketIds)
     }
 
@@ -100,11 +103,18 @@ class EventCollectorTask(marketService: MarketService, startInMinutesFrom: Int, 
       try {
 
         /**Add CREATE_MARKET event if market has not been processed yet.*/
-        if (!collectedMarket.contains(marketId)) {
-          val marketDetails = marketService.getMarketDetails(marketId)
-          val createMarketEvent = buildCreateMarketEvent(now.getMillis, marketDetails)
-          marketEventListener.onEvents(marketId, createMarketEvent :: Nil)
-          collectedMarket += marketId
+        try {
+          betex.findMarket(marketId)
+        } catch {
+          case e: NoSuchElementException => {
+            val marketDetails = marketService.getMarketDetails(marketId)
+            val createMarketEvent = buildCreateMarketEvent(now.getMillis, marketDetails)
+            marketEventListener.onEvents(marketId, createMarketEvent :: Nil)
+
+            val runners = marketDetails.runners.map(runner => new Market.Runner(runner.runnerId, runner.runnerName)).toList
+            betex.createMarket(marketId, marketDetails.marketName, marketDetails.menuPath, marketDetails.numOfWinners, marketDetails.marketTime, runners)
+
+          }
         }
 
         /**Get marketRunners from betfair. Key - runnerId, value - runner prices + price traded volume*/
@@ -125,6 +135,14 @@ class EventCollectorTask(marketService: MarketService, startInMinutesFrom: Int, 
         case e: IllegalArgumentException => log.error(e.getLocalizedMessage)
       }
     }
+
+    /**Remove expired markets.*/
+    val marketsToBeRemoved = betex.getMarkets().map(m => m.marketId) -- marketIds
+    for (marketId <- marketsToBeRemoved) {
+      betex.removeMarket(marketId)
+      log.info("Market %s has been removed from Betex. Current num of markets in Betex is %s".format(marketId, betex.getMarkets.size))
+    }
+
   }
 
   private def printError(e: EventProducerVerificationError) {

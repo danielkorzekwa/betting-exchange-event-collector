@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import dk.bot.betfairservice._
 import dk.betex.eventcollector.marketservice._
 import dk.betex.eventcollector.task._
+import dk.betex._
 
 /**Starts the MarketSimulator application.*/
 object MarketCollectorApp {
@@ -36,7 +37,8 @@ object MarketCollectorApp {
 		val marketService = new MarketService(betfairService)
 		val maxNumberOfWinners = if(inputData.contains("maxNumOfWinners")) Option(inputData("maxNumOfWinners").toInt) else None
 		 val marketEventListener = EventCollectorTask.FilesystemEventListener(inputData("marketDataDir"))
-		val eventCollectorTask = new EventCollectorTask(marketService,inputData("startInMinutesFrom").toInt,inputData("startInMinutesTo").toInt,maxNumberOfWinners,inputData("discoveryInterval").toInt,marketEventListener)
+		val betex = new Betex()
+		 val eventCollectorTask = new EventCollectorTask(betex,marketService,inputData("startInMinutesFrom").toInt,inputData("startInMinutesTo").toInt,maxNumberOfWinners,inputData("discoveryInterval").toInt,marketEventListener)
 
 		val collectionInterval = inputData("collectionInterval").toLong		
 		while(true) {
