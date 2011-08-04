@@ -190,13 +190,13 @@
 			<dependency>
    				<groupId>dk.betex</groupId>
    				<artifactId>betex-engine</artifactId>
-   				<version>0.2-SNAPSHOT</version>
+   				<version>0.2</version>
 			</dependency>
 			
 			<dependency>
 				<groupId>dk.flexibet</groupId>
 				<artifactId>flexibet-betfair</artifactId>
-				<version>0.7-SNAPSHOT</version>
+				<version>0.7</version>
 			</dependency>
 			
 			<dependency>
