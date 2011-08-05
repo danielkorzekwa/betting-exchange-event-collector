@@ -6,13 +6,13 @@
 	<groupId>dk.betex</groupId>
 	<artifactId>betex-event-collector</artifactId>
 	<name>betex</name>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.1</version>
 	<inceptionYear>2008</inceptionYear>
 	<url>http://code.google.com/p/betting-exchange/</url>
 	<scm>
-		<connection>scm:svn:http://betting-exchange-event-collector.googlecode.com/svn/trunk</connection>
-		<developerConnection>scm:svn:https://betting-exchange-event-collector.googlecode.com/svn/trunk</developerConnection>
-		<url>http://code.google.com/p/betting-exchange-event-collector</url>
+		<connection>scm:svn:http://betting-exchange-event-collector.googlecode.com/svn/tags/betex-event-collector-0.1</connection>
+		<developerConnection>scm:svn:https://betting-exchange-event-collector.googlecode.com/svn/tags/betex-event-collector-0.1</developerConnection>
+		<url>http://code.google.com/p/betting-exchange-event-collector/tags/betex-event-collector-0.1</url>
 	</scm>
 
 	<distributionManagement>
