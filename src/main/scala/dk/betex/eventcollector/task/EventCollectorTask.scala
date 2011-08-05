@@ -106,7 +106,7 @@ class EventCollectorTask(betex: IBetex, marketService: IMarketService, startInMi
         try {
           betex.findMarket(marketId)
         } catch {
-          case e: NoSuchElementException => {
+          case e: IllegalArgumentException => {
             val marketDetails = marketService.getMarketDetails(marketId)
             val createMarketEvent = buildCreateMarketEvent(now.getMillis, marketDetails)
             marketEventListener.onEvents(marketId, createMarketEvent :: Nil)
